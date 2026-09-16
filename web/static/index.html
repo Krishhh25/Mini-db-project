@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniDB — Live Demo</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --amber: #d29922;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px;
+  }
+  .wrap { width: 100%; max-width: 760px; }
+  h1 {
+    font-size: 1.4rem;
+    margin: 0 0 4px 0;
+    color: var(--text);
+  }
+  .subtitle {
+    color: var(--dim);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .subtitle a { color: var(--accent); }
+  .terminal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .terminal-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r { background: #ff5f56; }
+  .dot.y { background: #ffbd2e; }
+  .dot.g { background: #27c93f; }
+  #log {
+    padding: 16px;
+    height: 360px;
+    overflow-y: auto;
+    font-size: 0.87rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .line-cmd { color: var(--accent); }
+  .line-cmd::before { content: "minidb> "; color: var(--dim); }
+  .line-result { color: var(--text); }
+  .line-error { color: #ff7b72; }
+  form#inputRow {
+    display: flex;
+    border-top: 1px solid var(--border);
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  form#inputRow span {
+    color: var(--dim);
+    padding-top: 2px;
+  }
+  input#cmd {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9rem;
+  }
+  .examples {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .examples button {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    font: inherit;
+    font-size: 0.78rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .examples button:hover { border-color: var(--accent); color: var(--accent); }
+  footer {
+    margin-top: 24px;
+    color: var(--dim);
+    font-size: 0.78rem;
+    text-align: center;
+    line-height: 1.6;
+  }
+  footer a { color: var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MiniDB — live demo</h1>
+  <div class="subtitle">
+    A key-value database engine built from scratch in Python — log-structured
+    storage, a real B+ tree secondary index, TTL, transactions, and this
+    HTTP demo talking straight to a live instance. Try a command below, or
+    click an example.
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+    </div>
+    <div id="log"></div>
+    <form id="inputRow">
+      <span>minidb&gt;</span>
+      <input id="cmd" autocomplete="off" autofocus placeholder="SET user1 name=Alice age=30" />
+    </form>
+  </div>
+
+  <div class="examples">
+    <button data-cmd="SET user1 name=Alice age=30 city=NYC">SET user1 ...</button>
+    <button data-cmd="SET user2 name=Bob age=17 city=LA">SET user2 ...</button>
+    <button data-cmd="GET user1">GET user1</button>
+    <button data-cmd="INDEX age">INDEX age</button>
+    <button data-cmd="FIND age>=18">FIND age&gt;=18</button>
+    <button data-cmd="LIST">LIST</button>
+    <button data-cmd="HELP">HELP</button>
+  </div>
+
+  <footer>
+    This demo writes to a shared database file — be kind to it.
+    See the <a href="https://github.com" target="_blank" rel="noopener">source on GitHub</a>
+    for the full engine: storage internals, B+ tree, tests, and how to run it yourself.
+  </footer>
+</div>
+
+<script>
+const log = document.getElementById('log');
+const form = document.getElementById('inputRow');
+const input = document.getElementById('cmd');
+
+function appendLine(text, cls) {
+  const div = document.createElement('div');
+  div.className = cls;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function runCommand(text) {
+  appendLine(text, 'line-cmd');
+  try {
+    const res = await fetch('/api/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: text })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      appendLine(data.error || 'Request failed', 'line-error');
+    } else {
+      appendLine(data.result, 'line-result');
+    }
+  } catch (err) {
+    appendLine('Network error: ' + err.message, 'line-error');
+  }
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  runCommand(text);
+});
+
+document.querySelectorAll('.examples button').forEach(btn => {
+  btn.addEventListener('click', () => runCommand(btn.dataset.cmd));
+});
+
+appendLine('MiniDB REPL (web demo). Type HELP for commands.', 'line-result');
+</script>
+</body>
+</html>

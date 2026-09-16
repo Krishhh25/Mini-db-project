@@ -1,0 +1,3 @@
+# MiniDB's core engine has zero third-party dependencies (stdlib only).
+# This is only needed to run the test suite.
+pytest>=7.0

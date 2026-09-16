@@ -1,0 +1,19 @@
+# Container for the HTTP demo (web/app.py) -- as opposed to the root
+# Dockerfile, which runs the raw TCP server (minidb.server). This is the
+# one to deploy if you want a link a browser can open.
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY minidb/ ./minidb/
+COPY web/ ./web/
+RUN pip install --no-cache-dir -r web/requirements.txt
+
+VOLUME ["/data"]
+ENV MINIDB_FILE=/data/web_data.db
+
+EXPOSE 8080
+
+# gunicorn is a real production WSGI server -- Flask's built-in dev
+# server (used when running `python web/app.py` locally) isn't meant for
+# production traffic.
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--chdir", "web", "app:app"]
