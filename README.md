@@ -1,5 +1,7 @@
 # MiniDB
 
+**[Live demo →](https://mini-db-project.onrender.com)** 
+
 A key-value database engine built from scratch in Python — no third-party
 dependencies in the core engine. MiniDB implements the internals real
 databases rely on: an append-only log for durability, an in-memory index
@@ -10,8 +12,7 @@ database.
 
 ## Why I built this
 
-Most projects reach for SQLite or Postgres without ever seeing what's
-underneath. MiniDB is my attempt to build those internals myself and
+MiniDB is my attempt to build the internals of databases myself and
 understand *why* databases are built the way they are: why point lookups
 can be O(1), how a database survives a crash mid-write, how secondary
 indexes trade memory for query speed, why compaction exists, and what it
