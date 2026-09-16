@@ -289,7 +289,3 @@ db.compact()
 - Binary record format instead of JSON lines, for smaller files and faster parsing
 - Replication (a second MiniDB instance following the log as a read replica)
 - A proper wire protocol (e.g. RESP-like) instead of line-based text, for a real client library
-
-## License
-
-MIT
